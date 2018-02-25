@@ -1,16 +1,29 @@
 import Rx from "rxjs/Rx";
+import * as R from 'ramda';
 
 /** クリック判定をするクラス */
 export class Click {
   constructor(onClick) {
-    this._onTouchDown = new Rx.Subject();
-    this._onTouchUp = new Rx.Subject();
+    const EMPTY_EVENT = {type: 'empty', isOverlap: false};
+    const CLICK_EVENT_LIST = [
+      {type: 'touchDown', isOverlap: true},
+      {type: 'touchUp', isOverlap: true}
+    ];
 
-    this._onTouchDown
-      .filter(v => v.isOverlap)
-      .flatMap(v => this._onTouchUp)
-      .filter(v => v.isOverlap)
-      .subscribe(() => onClick());
+    this._touchEvent = new Rx.BehaviorSubject([EMPTY_EVENT, EMPTY_EVENT]);
+    this._touchEvent
+      .scan(function(acc, x, index, source) {
+        const list = [...acc, x];
+        return list.slice(-2);
+      })
+      .subscribe(eventList => {
+        //console.log('subscribe');
+        //console.log(eventList);
+        const isClick = R.equals(eventList, CLICK_EVENT_LIST);
+        if (isClick) {
+          onClick();
+        }
+      });
   }
 
   /**
@@ -19,7 +32,7 @@ export class Click {
    * @param isOverlap クリック判定対象と指、マウスが重なっているか否かのフラグ、trueで重なっている
    */
   onTouchDown(isOverlap) {
-    this._onTouchDown.next({isOverlap})
+    this._touchEvent.next({type: 'touchDown', isOverlap});
   }
 
   /**
@@ -28,6 +41,6 @@ export class Click {
    * @param isOverlap クリック判定対象と指、マウスが重なっているか否かのフラグ、trueで重なっている
    */
   onTouchUp(isOverlap) {
-    this._onTouchUp.next({isOverlap});
+    this._touchEvent.next({type: 'touchUp', isOverlap});
   }
 }
