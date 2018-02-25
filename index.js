@@ -1,20 +1,9 @@
-import Rx from 'rxjs/Rx';
+import {Click} from './click';
 
 window.onload = () => {
-  var subject = new Rx.Subject();
-
-  var subscription = subject
-    .map(v => v + 1)
-    .subscribe(
-      function (x) {
-        console.log('Next: ' + x.toString());
-      },
-      function (err) {
-        console.log('Error: ' + err);
-      },
-      function () {
-        console.log('Completed');
-      });
-
-  subject.next(42);
+  const click = new Click(() => {
+    console.log('on clicked');
+  });
+  click.onTouchDown(true);
+  click.onTouchUp(true);
 };
