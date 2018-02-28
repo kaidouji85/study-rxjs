@@ -3,44 +3,41 @@ import * as R from 'ramda';
 
 /** クリック判定をするクラス */
 export class Click {
-  constructor(onClick) {
-    const EMPTY_EVENT = {type: 'empty', isOverlap: false};
-    const CLICK_EVENT_LIST = [
-      {type: 'touchDown', isOverlap: true},
-      {type: 'touchUp', isOverlap: true}
-    ];
+  constructor({onClickStart, onClickEnd, onClickCnacel}) {
+    this._mouseEvent = new Rx.Subject();
 
-    this._touchEvent = new Rx.BehaviorSubject([EMPTY_EVENT, EMPTY_EVENT]);
-    this._touchEvent
-      .scan(function(acc, x, index, source) {
-        const list = [...acc, x];
-        return list.slice(-2);
-      })
-      .subscribe(eventList => {
-        //console.log('subscribe');
-        //console.log(eventList);
-        const isClick = R.equals(eventList, CLICK_EVENT_LIST);
-        if (isClick) {
-          onClick();
-        }
-      });
+    this._mouseEvent
+      .bufferCount(2)
+      .filter(v => R.equals(v[0], {type: 'mouseDown', isOverlap: true}))
+      .filter(v => R.equals(v[1], {type: 'mouseUp', isOverlap: true}))
+      .subscribe(() => onClickEnd());
+
+    this._mouseEvent
+      .filter(v => R.equals(v, {type: 'mouseDown', isOverlap: true}))
+      .subscribe(() => onClickStart());
+
+    this._mouseEvent
+      .bufferCount(2)
+      .filter(v => R.equals(v[0], {type: 'mouseDown', isOverlap: true}))
+      .filter(v => R.equals(v[1], {type: 'mouseUp', isOverlap: false}))
+      .subscribe(() => onClickCnacel());
   }
 
   /**
-   * マウス、指がゲーム画面にタッチダウンした際に呼ばれる関数
+   * マウスがゲーム画面にタッチダウンした際に呼ばれる関数
    *
    * @param isOverlap クリック判定対象と指、マウスが重なっているか否かのフラグ、trueで重なっている
    */
-  onTouchDown(isOverlap) {
-    this._touchEvent.next({type: 'touchDown', isOverlap});
+  onMouseDown(isOverlap) {
+    this._mouseEvent.next({type: 'mouseDown', isOverlap});
   }
 
   /**
-   * マウス、指がゲーム画面にタッチアップした際に呼ばれる関数
+   * マウスがゲーム画面にタッチアップした際に呼ばれる関数
    *
    * @param isOverlap クリック判定対象と指、マウスが重なっているか否かのフラグ、trueで重なっている
    */
-  onTouchUp(isOverlap) {
-    this._touchEvent.next({type: 'touchUp', isOverlap});
+  onMouseUp(isOverlap) {
+    this._mouseEvent.next({type: 'mouseUp', isOverlap});
   }
 }
